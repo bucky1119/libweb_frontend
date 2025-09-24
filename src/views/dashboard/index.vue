@@ -9,7 +9,7 @@
       </div>
 
       <!-- 新闻列表展示区 -->
-      <el-col :span="16">
+  <el-col :xs="24" :sm="24" :md="16" :lg="16" :xl="16">
         <!-- 搜索框 -->
         <div>
           <div>
@@ -18,7 +18,7 @@
             <span style="float: right;">为您检索到{{total}}条记录</span>
           </div>
           <div style="margin-top: 15px;">
-            <el-input placeholder="请输入内容" v-model="searchForm.text" @change="handleSearch">
+            <el-input placeholder="请输入内容" v-model="searchForm.keyword" @change="handleSearch">
               <el-button slot="append" icon="el-icon-search" @click="handleSearch"></el-button>
             </el-input>
           </div>
@@ -46,7 +46,7 @@
             </div>
             <div class="card-tags">
               <!-- 日期、地区、机构、期刊名称 -->
-              <span class="tag">{{item.date}}</span>
+              <span class="tag">{{item.articleDate}}</span>
               <span class="tag">{{item.nation}}</span>
               <span class="tag">{{item.postAgency}}</span>
             </div>
@@ -54,22 +54,15 @@
               <!-- 摘要 -->
               {{item.text}}
             </div>
-            <el-row class="card-actions">
-              <el-col>
-                <a :href="item.linkUrl" target="_blank" class="blue-text-underline">
-                  read more
-                </a>
+            <el-row class="card-actions" type="flex" justify="space-between" align="middle">
+              <el-col :span="12" class="actions-left">
+                <a :href="item.linkUrl" target="_blank" class="blue-text-underline no-wrap">read more</a>
               </el-col>
-              <el-col>
-                <span class="action2" @click="goMark(item.id)" v-if="userRole=='EXPERT' || userRole=='ADMIN' ||userRole=='LIBRARIAN'">
-                  评分>>>
-                </span>
-                <span class="btn-del" @click="handleDelete(item.id)"
-                  v-if="userRole=='LIBRARIAN' ||userRole=='ADMIN'">删除</span>
-                <span class="btn-edit" @click="handleUpdate(item)"
-                  v-if="userRole=='LIBRARIAN' ||userRole=='ADMIN'">编辑</span>
-                  <!-- 翻译按钮 -->
-                <el-button @click="handleTranslate(item)" type="text" class="btn-translate">翻译</el-button> 
+              <el-col :span="12" class="actions-right">
+                <span class="action2" @click="goMark(item.id)" v-if="userToken && (userRole=='EXPERT' || userRole=='ADMIN' || userRole=='LIBRARIAN')">评分>>></span>
+                <span class="btn-del" @click="handleDelete(item.id)" v-if="userToken && (userRole=='LIBRARIAN' || userRole=='ADMIN')">删除</span>
+                <span class="btn-edit" @click="handleUpdate(item)" v-if="userToken && (userRole=='LIBRARIAN' || userRole=='ADMIN')">编辑</span>
+                <el-button @click="handleTranslate(item)" type="text" class="btn-translate">翻译标题</el-button>
               </el-col>
             </el-row>
           </div>
@@ -83,7 +76,7 @@
 
       </el-col>
       <!-- 搜索区 -->
-      <el-col :span="8">
+  <el-col :xs="24" :sm="24" :md="8" :lg="8" :xl="8">
         <div class="search-part">
           <el-card>
             <el-divider>更多搜索</el-divider>
@@ -204,8 +197,9 @@
     name: 'Dashboard',
     computed: {
       ...mapState({
-      userToken: state => state.user.token // 获取用户登录状态的 token
-    }),
+        // 以布尔值反映登录状态，避免字符串等真值导致误判
+        userToken: state => Boolean(state.user.token)
+      }),
       ...mapGetters([
         'articleList'
       ])
@@ -221,6 +215,7 @@
         domainList: domainList,
         subjectList: subjectList,
         searchForm: {
+          keyword: '',
           postAgency: '',
           startDate: '',
           endDate: '',
@@ -634,52 +629,70 @@
   }
 
   .article-card {
-    margin-bottom: 20px;
-    background: #c9e0bf;
-    transition-duration: 0.5s;
-    padding: 18px;
-    border-radius: 2px;
+    margin-bottom: 24px;
+    background: #e9f5e7; /* 更柔和的浅绿底 */
+    border: 1px solid #d9ead3;
+    border-radius: 12px;
+    padding: 18px 20px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: box-shadow .2s ease, transform .2s ease;
   }
 
   .article-card:hover {
-    -webkit-box-shadow: #ccc 0px 10px 10px;
-    -moz-box-shadow: #ccc 0px 10px 10px;
-    box-shadow: #ccc 0px 10px 10px;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(31, 45, 61, 0.08);
   }
 
   .card-title {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1f2d3d;
   }
 
-  .card-title:hover {
+  .card-title a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .card-title a:hover {
     color: #409EFF;
     text-decoration: underline;
   }
 
   .card-title_cn {
-    margin-bottom: 8px;
-    font-weight: 200;
+    margin-bottom: 10px;
+    font-size: 16px;
+    color: #3a3a3a;
+    font-weight: 400;
   }
 
   .card-tags {
-    margin-bottom: 12px;
+    margin-bottom: 10px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
   }
 
   .tag {
-    background-color: #919392;
-    color: white;
-    padding: 5px;
+    background-color: #eef6ee;
+    color: #476b4b;
+    padding: 4px 10px;
     font-size: 12px;
-    border-radius: 10px;
-    margin-right: 12px;
+    border-radius: 12px;
+    border: 1px solid #d6ead6;
   }
 
   .card-abstract {
-    margin-bottom: 12px;
-    border-left-style: solid;
-    padding-left: 8px;
+    margin: 6px 0 12px 0;
+    border-left: 3px solid #9fcd9f;
+    background: #f8fcf8;
+    padding: 10px 12px;
+    color: #2f3b45;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3; /* 标准属性，提升兼容性 */
     -webkit-box-orient: vertical;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -688,25 +701,36 @@
 
   .card-actions {
     display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 4px;
   }
+
+  .card-actions > .el-col { display: flex; align-items: center; }
+  .card-actions > .el-col:first-child { flex: 1; }
+  .card-actions > .el-col:last-child { flex: none; justify-content: flex-end; gap: 16px; }
 
   .action2 {
     float: right;
     cursor: pointer;
+    color: #606266;
+    font-weight: 500;
   }
+
+  .action2:hover { color: #409EFF; }
 
   .btn-edit {
     float: right;
     cursor: pointer;
     color: #409EFF;
-    margin-right: 20px;
+    margin-right: 0;
   }
 
   .btn-del {
     float: right;
     cursor: pointer;
-    color: red;
-    margin-right: 20px;
+    color: #F56C6C;
+    margin-right: 0;
   }
 
   .blue-text-underline {
@@ -715,6 +739,38 @@
     text-decoration: underline;
     /* 添加下划线 */
     cursor: pointer;
+  }
+
+  .no-wrap { white-space: nowrap; }
+
+  .actions-left { display: flex; align-items: center; }
+  .actions-right {
+    display: inline-flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .btn-translate.el-button--text {
+    padding: 0;
+    color: #409EFF;
+  }
+
+  .el-checkbox { margin-bottom: 8px; }
+
+  @media (max-width: 768px) {
+    .dashboard-container { margin: 12px 12px; }
+    .first-part { height: auto; padding: 24px 16px 12px 16px; }
+    .first-part .web-title { font-size: 28px; }
+    .first-part .web-title-en { font-size: 20px; margin-left: 10px; padding-left: 8px; }
+    .article-card { padding: 14px; border-radius: 10px; }
+    .card-title { font-size: 18px; }
+    .card-tags { gap: 6px; }
+    .card-abstract { padding: 8px 10px; }
+    .card-actions { flex-direction: column; align-items: flex-start; }
+    .card-actions > .el-col { width: 100%; }
+    .actions-right { justify-content: flex-start; gap: 12px; }
+    .no-wrap { white-space: normal; }
   }
 
   .search-part {

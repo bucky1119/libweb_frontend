@@ -8,17 +8,18 @@
     <div class="right-menu">
       <div class="user-actions">
         <!-- <div class="sign-in-action" @click="handlSignIn">注册</div> -->
-        <div v-if="!hasToken" class="log-in-action" @click="handleLogIn">登录{{hasToken}}</div>
+        <div v-if="!hasToken" class="log-in-action" @click="handleLogIn">登录</div>
         <div v-else>欢迎：{{username}}</div>
       </div>
-      <el-dropdown class="avatar-container" trigger="click">
+  <el-dropdown class="avatar-container" trigger="click">
         <div class="avatar-wrapper">
-          <img :src="avatar+'?imageView2/1/w/80/h/80'" class="user-avatar">
+          <img :src="require('@/assets/icons/user2.png')" class="user-avatar">
           <i class="el-icon-caret-bottom" />
         </div>
         <el-dropdown-menu slot="dropdown" class="user-dropdown">
            <!-- 系统管理：仅 ADMIN 可见 -->
-          <router-link v-if="isAdmin" to="/userManage">
+          <!-- 仅在已登录且为 ADMIN 时显示系统管理 -->
+          <router-link v-if="hasToken && isAdmin" to="/userManage">
             <el-dropdown-item>
               系统管理
             </el-dropdown-item>
@@ -43,7 +44,7 @@
   import { mapGetters,mapState } from 'vuex'
   import Breadcrumb from '@/components/Breadcrumb'
   import Hamburger from '@/components/Hamburger'
-  import { getToken, removeToken, getUsername, removeUsername } from "@/utils/auth"; // get token from cookie
+  import { getToken, getUsername } from "@/utils/auth"; // get token from cookie
 
   export default {
     components: {
@@ -54,16 +55,19 @@
       ...mapGetters([
         'sidebar',
         'avatar',
-        'user/roles' // 确保从 Vuex 中获取用户角色信息
+        'roles',
+        'token',
       ]),
       ...mapState({
-      roles: state => state.user.roles // 获取用户登录状态的 token
-    }),
+        rolesState: state => state.user.roles,
+        tokenState: state => state.user.token,
+      }),
       hasToken ()
       {
         // determine whether the user has logged in
-        const token = getToken();
-        return token
+        // 优先使用 Vuex 中的 token，回退到 cookie
+        const token = this.token || this.tokenState || getToken();
+        return Boolean(token);
       },
       username ()
       {
@@ -76,7 +80,9 @@
         return src;
       },
       isAdmin() {
-      return this.roles === 'ADMIN'; // 判断是否为管理员角色
+        const role = this.roles || this.rolesState;
+        // 支持字符串或数组两种形式
+        return Array.isArray(role) ? role.includes('ADMIN') : role === 'ADMIN';
       }
     },
     methods: {
@@ -84,12 +90,14 @@
       // {
       //   this.$store.dispatch('app/toggleSideBar')
       // },
-      async logout ()
-      {
-        // await this.$store.dispatch('user/logout')
-        removeToken();
-        removeUsername();
-        this.$router.push(`/login`)
+      async logout () {
+        try {
+          await this.$store.dispatch('user/logout');
+        } catch (e) {
+          // 已在 action 内兜底清理
+        }
+        // 跳转到主页，并刷新，确保界面与路由完全重置
+        this.$router.push('/dashboard');
         location.reload();
       },
 
@@ -109,26 +117,26 @@
     height: 50px;
     overflow: hidden;
     position: relative;
-    /* background: #fff; */
     box-shadow: 0 1px 4px rgba(0, 21, 41, .08);
-    background-color: #696969;
-    color: #fff;
+    background-color: #4a4a4a; /* 优化背景颜色为更柔和的深灰色 */
+    color: #f5f5f5; /* 优化字体颜色为浅灰色，提升对比度 */
 
     .hamburger-container {
       line-height: 46px;
       height: 100%;
       float: left;
-      /* cursor: pointer; */
       transition: background .3s;
       -webkit-tap-highlight-color: transparent;
 
-      /* &:hover {
-        background: rgba(0, 0, 0, .025)
-      } */
+      &:hover {
+        background: rgba(255, 255, 255, .1); /* 增加悬停效果 */
+      }
     }
 
     .breadcrumb-container {
       float: left;
+      font-size: 14px; /* 调整字体大小 */
+      color: #dcdcdc; /* 优化字体颜色 */
     }
 
     .right-menu {
@@ -145,8 +153,8 @@
         display: inline-block;
         padding: 0 8px;
         height: 100%;
-        font-size: 18px;
-        color: #5a5e66;
+        font-size: 16px; /* 调整字体大小 */
+        color: #e0e0e0; /* 优化字体颜色 */
         vertical-align: text-bottom;
 
         &.hover-effect {
@@ -154,7 +162,7 @@
           transition: background .3s;
 
           &:hover {
-            background: rgba(0, 0, 0, .025)
+            background: rgba(255, 255, 255, .1); /* 增加悬停效果 */
           }
         }
       }
@@ -166,10 +174,14 @@
         .sign-in-action {
           margin-right: 12px;
           cursor: pointer;
+          color: #b0b0b0; /* 优化字体颜色 */
+          font-weight: bold; /* 增加字体粗细 */
         }
 
         .log-in-action {
           cursor: pointer;
+          color: #b0b0b0; /* 优化字体颜色 */
+          font-weight: bold; /* 增加字体粗细 */
         }
       }
 
@@ -184,7 +196,8 @@
             cursor: pointer;
             width: 40px;
             height: 40px;
-            border-radius: 10px;
+            border-radius: 50%; /* 改为圆形头像 */
+            border: 2px solid #f5f5f5; /* 增加边框 */
           }
 
           .el-icon-caret-bottom {
@@ -193,6 +206,7 @@
             right: -20px;
             top: 25px;
             font-size: 12px;
+            color: #dcdcdc; /* 优化颜色 */
           }
         }
       }

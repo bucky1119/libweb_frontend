@@ -1,80 +1,78 @@
 <template>
-  <div class="app-container" style="background: #f2f2e4;    height: 100vh;">
-    <!-- 价值度分值展示 -->
-    <div class="block">
-      <div style="display: flex;align-items: center;">
-        <div v-if="valueScore.averageValueScore" class="value-label">平均价值度</div>
-        <div class="value">{{valueScore.averageValueScore?valueScore.averageValueScore:'暂无评分'}}</div>
+  <div class="app-container page-bg">
+    <!-- 顶部平均价值度与各指标均值 -->
+    <el-card shadow="never" class="top-card">
+      <div class="top-line">
+        <div class="value-label" v-if="valueScore.averageValueScore">平均价值度</div>
+        <div class="value">{{ valueScore.averageValueScore ? formatScore(valueScore.averageValueScore) : '暂无评分' }}</div>
       </div>
-      <!--  -->
-    </div>
-    <el-row :gutter="20">
+      <div class="metrics-chips" v-if="hasAnyAverage">
+        <div class="chip" v-if="valueScore.averageInnovationScore">创新度 {{ formatScore(valueScore.averageInnovationScore) }}</div>
+        <div class="chip" v-if="valueScore.averageDisruptionScore">颠覆性 {{ formatScore(valueScore.averageDisruptionScore) }}</div>
+        <div class="chip" v-if="valueScore.averageFrontierScore">前沿性 {{ formatScore(valueScore.averageFrontierScore) }}</div>
+        <div class="chip" v-if="valueScore.averageIndustryImpactScore">产业影响 {{ formatScore(valueScore.averageIndustryImpactScore) }}</div>
+        <div class="chip" v-if="valueScore.averageAdditionalScore">附加分 {{ formatScore(valueScore.averageAdditionalScore) }}</div>
+      </div>
+    </el-card>
+
+    <el-row :gutter="20" class="content-row">
       <!-- 评分记录 -->
       <el-col :span="9">
-        <div class="title-part">评分记录</div>
-        <div style="height: 500px; display: flex;">
-          <el-scrollbar wrap-class="scrollbar-wrapper" style="width: 80%; height: 100%; ">
-            <!-- <div style="height: 500px;"> -->
-            <!-- <div>价值指标</div>
-        <el-rate v-if="value" v-model="value" disabled text-color="#ff9900" :max=" 10" /> -->
-
-            <div v-if="valueList.length">
-              <div v-for="(item, index) in valueList " :key="index">
-                <div class="user-info">
-                  <div class="logo"> </div>
-                  <div class="username">{{item.expertId}}</div>
-                </div>
-                <div class="value-part">
-                  <div style="color: #9a9a96;">创新度</div>
-                  <el-slider class="read-slider" v-model="item.innovationScore" :max=10 disabled />
-                  <div style="color: #9a9a96;">颠覆性</div>
-                  <el-slider class="read-slider" v-model="item.disruptionScore" :max=10 disabled />
-                  <div style="color: #9a9a96;">前沿性</div>
-                  <el-slider class="read-slider" v-model="item.frontierScore" :max=10 disabled />
-                  <div style="color: #9a9a96;">产业影响</div>
-                  <el-slider class="read-slider" v-model="item.industryImpactScore" :max=10 disabled />
-                  <div style="color: #9a9a96;">附加分</div>
-                  <el-slider class="read-slider" v-model="item.additionalScore" :max=10 disabled />
-
+        <el-card shadow="never" class="card">
+          <div class="title-part">评分记录</div>
+          <div class="list-wrapper">
+            <el-scrollbar wrap-class="scrollbar-wrapper" class="scroll">
+              <div v-if="valueList.length">
+                <div v-for="(item, index) in valueList" :key="index" class="record-item">
+                  <div class="user-info">
+                    <div class="logo"></div>
+                    <div class="username">{{ item.expertId }}</div>
+                  </div>
+                  <div class="value-part">
+                    <div class="metric"><span>创新度</span><el-slider class="read-slider" v-model="item.innovationScore" :max="10" disabled /></div>
+                    <div class="metric"><span>颠覆性</span><el-slider class="read-slider" v-model="item.disruptionScore" :max="10" disabled /></div>
+                    <div class="metric"><span>前沿性</span><el-slider class="read-slider" v-model="item.frontierScore" :max="10" disabled /></div>
+                    <div class="metric"><span>产业影响</span><el-slider class="read-slider" v-model="item.industryImpactScore" :max="10" disabled /></div>
+                    <div class="metric"><span>附加分</span><el-slider class="read-slider" v-model="item.additionalScore" :max="10" disabled /></div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div v-else class="value">暂无记录</div>
-
-          </el-scrollbar>
-        </div>
-
+              <div v-else class="empty">暂无记录</div>
+            </el-scrollbar>
+          </div>
+        </el-card>
       </el-col>
 
       <!-- 文章评分 -->
       <el-col :span="15">
-        <div class="rate-part">
+        <el-card shadow="never" class="card">
           <div class="title-part" style="cursor: pointer;">
             <span style="margin-right: 18px;">文章评分</span>
+            <el-button type="text" @click="applyAverage" v-if="hasAnyAverage">一键填入平均值</el-button>
           </div>
-          <div class="label">创新度</div>
-          <el-input-number v-model="rateForm.create_tag" :min="1" :max="10" />
-          <div class="label">颠覆性</div>
-          <el-input-number v-model="rateForm.overturn_tag" :min="1" :max="10" />
-          <div class="label">前沿性</div>
-          <el-input-number v-model="rateForm.frontier_tag" :min="1" :max="10" />
-          <div class="label">产业影响</div>
-          <el-input-number v-model="rateForm.influence_tag" :min="1" :max="10" />
-          <div class="label">附加分</div>
-          <el-input-number v-model="rateForm.additional_tag" :min="1" :max="10" />
-          <el-button class="btn" @click="onSubmit">提交</el-button>
-        </div>
+          <el-form label-position="top" class="rate-form">
+            <el-form-item label="创新度">
+              <el-input-number v-model="rateForm.create_tag" :min="1" :max="10" />
+            </el-form-item>
+            <el-form-item label="颠覆性">
+              <el-input-number v-model="rateForm.overturn_tag" :min="1" :max="10" />
+            </el-form-item>
+            <el-form-item label="前沿性">
+              <el-input-number v-model="rateForm.frontier_tag" :min="1" :max="10" />
+            </el-form-item>
+            <el-form-item label="产业影响">
+              <el-input-number v-model="rateForm.influence_tag" :min="1" :max="10" />
+            </el-form-item>
+            <el-form-item label="附加分">
+              <el-input-number v-model="rateForm.additional_tag" :min="1" :max="10" />
+            </el-form-item>
+          </el-form>
+          <div class="submit-row">
+            <el-button class="btn" type="primary" @click="onSubmit">提交</el-button>
+          </div>
+        </el-card>
       </el-col>
     </el-row>
-    <!-- <el-dialog title="价值度指标设置" :visible.sync="settingDialog" width="80%" :before-close="handleClose">
-      <div>
-        修改价值度指标内容
-      </div>
-      <span slot="footer" class="dialog-footer">
-        <el-button @click="settingDialog = false">取 消</el-button>
-        <el-button type="primary" @click="settingDialog = false">确 定</el-button>
-      </span>
-    </el-dialog> -->
   </div>
 </template>
 
@@ -89,6 +87,12 @@
       ratingHist: state => state.ratingHist,
       averageScore: state => state.averageScore,
       })
+      ,
+      // 是否存在任一平均分
+      hasAnyAverage () {
+        const v = this.valueScore;
+        return !!(v.averageValueScore || v.averageInnovationScore || v.averageDisruptionScore || v.averageFrontierScore || v.averageIndustryImpactScore || v.averageAdditionalScore)
+      }
     },
     data ()
     {
@@ -115,10 +119,26 @@
           articleId: '',
         },
         settingDialog: false,
-
+        
       }
     },
     methods: {
+      // 分数格式化
+      formatScore (n) {
+        if (n === null || n === undefined || n === '') return ''
+        const num = Number(n)
+        if (Number.isNaN(num)) return ''
+        return num.toFixed(1)
+      },
+      // 一键填入平均值
+      applyAverage () {
+        const a = this.valueScore
+        if (a.averageInnovationScore) this.rateForm.create_tag = a.averageInnovationScore
+        if (a.averageDisruptionScore) this.rateForm.overturn_tag = a.averageDisruptionScore
+        if (a.averageFrontierScore) this.rateForm.frontier_tag = a.averageFrontierScore
+        if (a.averageIndustryImpactScore) this.rateForm.influence_tag = a.averageIndustryImpactScore
+        if (a.averageAdditionalScore) this.rateForm.additional_tag = a.averageAdditionalScore
+      },
       // 评分信息初始化
       async init ()
       {
@@ -201,105 +221,39 @@
 </script>
 
 <style scoped>
-  .line {
-    text-align: center;
-  }
+  .page-bg { background: #f6f7f2; min-height: 100vh; padding-bottom: 24px; }
 
-  .block {
-    padding: 30px 0;
+  .top-card { margin-bottom: 16px; border-radius: 8px; }
+  .top-line { display: flex; align-items: baseline; gap: 16px; }
+  .value-label { font-size: 18px; font-weight: 600; color: #6c6c67; }
+  .value { font-size: 40px; font-weight: 700; color: #327442; }
+  .metrics-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip { background: #eef6ea; color: #2c6e3f; border: 1px solid #d7ead8; padding: 4px 10px; border-radius: 14px; font-size: 12px; }
 
-  }
+  .content-row { margin-top: 8px; }
+  .card { border-radius: 8px; }
+  .title-part { color: #8a8a86; font-weight: 600; margin-bottom: 12px; }
 
-  .title-part {
-    color: #9a9a96;
-    font-weight: 600;
-    margin-bottom: 20px;
-  }
+  .list-wrapper { height: 520px; }
+  .scroll { height: 100%; padding-right: 8px; }
+  .record-item { padding: 8px 0 16px; border-bottom: 1px dashed #eee; }
 
-  .value-label {
-    font-size: 24px;
-    font-weight: 500;
-  }
+  .user-info { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .logo { width: 36px; height: 36px; border-radius: 50%; background: #327442; }
+  .username { color: #666; font-weight: 600; }
 
-  .btn {
-    margin-top: 24px;
-    float: right;
-    color: #fff;
-    background: #8c8c88;
-    ;
-  }
+  .value-part { padding: 0 12px; }
+  .metric { display: flex; align-items: center; gap: 10px; color: #9a9a96; }
+  .metric > span { width: 64px; flex: 0 0 auto; }
 
-  .value {
-    margin-left: 24px;
-    font-size: 42px;
-    font-weight: 600;
-    color: #327442;
-  }
+  .rate-form { max-width: 420px; }
+  .submit-row { display: flex; justify-content: flex-end; margin-top: 8px; }
+  .btn { color: #fff; background: #327442; border-color: #327442; }
 
-  .user-info {
-    display: flex;
-    align-items: center;
-    margin-bottom: 20px;
-  }
+  .read-slider>>>.el-slider__runway { margin: 6px 0; height: 3px; width: 100%; }
+  .read-slider>>>.el-slider__bar { height: 3px; }
+  .read-slider>>>.el-slider__button-wrapper { top: -16; }
+  .read-slider>>>.el-slider__button { width: 8px; height: 8px; }
 
-  .logo {
-    width: 50px;
-    height: 50px;
-    border-radius: 50%;
-    background: #327442;
-    margin-right: 24px;
-  }
-
-  .username {
-    color: #838380;
-    font-weight: 600;
-  }
-
-  .value-part {
-    padding: 0 74px;
-  }
-
-  .rate-part {
-    padding-right: 200px;
-  }
-
-  .read-slider>>>.el-slider__runway {
-    margin: 8px 0;
-    height: 3px;
-    width: 80%;
-  }
-
-  .read-slider>>>.el-slider__bar {
-    height: 3px;
-  }
-
-  .read-slider>>>.el-slider__button-wrapper {
-    top: -16;
-  }
-
-  .read-slider>>>.el-slider__button {
-    width: 8px;
-    height: 8px;
-  }
-
-  .label {
-    font-weight: 800;
-    margin-top: 24px;
-  }
-
-  .write-slider>>>.el-slider__runway {
-    background-color: #c4d59b;
-    margin: 20px 0;
-  }
-
-  .write-slider>>>.el-slider__bar {
-    background-color: #696969;
-  }
-
-  .write-slider>>>.el-slider__button {
-    width: 18px;
-    height: 18px;
-    background-color: #696969;
-    border: 2px solid #696969;
-  }
+  .empty { color: #aaa; text-align: center; padding: 48px 0; }
 </style>

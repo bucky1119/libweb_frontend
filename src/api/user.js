@@ -59,11 +59,19 @@ export function deleteUser(id) {
   });
 }
 
-export function getInfo(token) {
+export function getInfo() {
   return request({
     url: "/api/auth/info",
     method: "get",
-    params: { token },
+  });
+}
+
+// 重置用户密码
+export function resetPassword(id, data) {
+  return request({
+    url: `/api/admin/users/${id}/reset-password`,
+    method: 'post',
+    data,
   });
 }
 

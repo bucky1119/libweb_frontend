@@ -13,8 +13,9 @@ const service = axios.create({
 service.interceptors.request.use(
   (config) => {
     // 添加 Authorization token
-    if (store.getters.token) {
-      config.headers["Authorization"] = `Bearer ${getToken()}`;
+    const token = store.getters.token || getToken();
+    if (token) {
+      config.headers["Authorization"] = `Bearer ${token}`;
     }
     return config;
   },
@@ -27,7 +28,6 @@ service.interceptors.request.use(
 // response interceptor
 service.interceptors.response.use(
   (response) => {
-
     // 如果是 Blob 类型的响应，直接返回 response 对象
     if (response.request.responseType === "blob") {
       return response;
@@ -35,10 +35,15 @@ service.interceptors.response.use(
 
     const res = response.data;
 
+    // 兼容无 code 包装的成功响应（HTTP 200）
+    if (res && typeof res === 'object' && !('code' in res)) {
+      return res;
+    }
+
     // 根据后端自定义业务 code 进行判断
     if (res.code !== 200) {
       Message({
-        message: res.msg || "Error",
+        message: res.msg || res.message || "请求失败",
         type: "error",
         duration: 5 * 1000,
       });
@@ -46,11 +51,11 @@ service.interceptors.response.use(
       // 特定错误处理，如 token 过期等
       if (res.code === 50008 || res.code === 50012 || res.code === 50014) {
         MessageBox.confirm(
-          "You have been logged out, you can cancel to stay on this page, or log in again",
-          "Confirm logout",
+          "登录已失效，是否重新登录？",
+          "确认退出",
           {
-            confirmButtonText: "Re-Login",
-            cancelButtonText: "Cancel",
+            confirmButtonText: "重新登录",
+            cancelButtonText: "取消",
             type: "warning",
           }
         ).then(() => {
@@ -59,7 +64,7 @@ service.interceptors.response.use(
           });
         });
       }
-      return Promise.reject(new Error(res.msg || "Error"));
+      return Promise.reject(new Error(res.msg || res.message || "Error"));
     } else {
       return res;
     }
@@ -71,6 +76,15 @@ service.interceptors.response.use(
     let errorMsg = error.response && error.response.data && error.response.data.msg 
       ? error.response.data.msg 
       : error.message;
+
+    // 处理未授权或权限不足，自动登出并跳转到登录
+    if (error.response && (error.response.status === 401 || error.response.status === 403)) {
+      store.dispatch('user/resetToken').finally(() => {
+        // 带上当前路由作为重定向
+        const currentPath = window.location.hash ? window.location.hash.slice(1) : '/';
+        window.location.href = `#/login?redirect=${encodeURIComponent(currentPath)}`;
+      });
+    }
 
     Message({
       message: errorMsg,

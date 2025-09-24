@@ -210,6 +210,16 @@
     z-index: -1;
     /* 确保它在内容下方 */
   }
+
+  /* Mobile optimizations */
+  @media (max-width: 768px) {
+    .login-container .el-input {
+      width: 100%;
+    }
+    .login-container::after {
+      height: 36px; /* 移动端底部色块更矮，避免视觉遮挡 */
+    }
+  }
 </style>
 
 <style lang="scss" scoped>
@@ -218,7 +228,7 @@
   $light_gray: #eee;
 
   .login-container {
-    min-height: 100%;
+    min-height: 100vh; /* 保证占满视口高度，底部色块不会遮挡内容 */
     width: 100%;
     /* background-color: $bg; */
     overflow: hidden;
@@ -315,6 +325,33 @@
       color: $dark_gray;
       cursor: pointer;
       user-select: none;
+    }
+  }
+
+  /* Mobile layout & typography */
+  @media (max-width: 768px) {
+    .first-part {
+      height: auto;
+      padding: 32px 16px 12px 16px;
+    }
+    .first-part .web-title {
+      font-size: 28px;
+    }
+    .first-part .web-title-en {
+      font-size: 18px;
+      margin-left: 10px;
+      padding-left: 8px;
+    }
+    .form {
+      margin: 16px 12px;
+    }
+    .login-form {
+      width: 100%;
+      padding: 24px 16px;
+    }
+    .title-container .title {
+      font-size: 22px;
+      margin: 0 auto 24px auto;
     }
   }
 </style>

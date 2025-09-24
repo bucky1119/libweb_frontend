@@ -33,6 +33,10 @@ module.exports = {
     port: port,
     open: true,
     hot: true, // 热更新
+    watchOptions: {
+      poll: true, // 使用轮询模式监听文件变化
+      ignored: /node_modules/, // 忽略 node_modules
+    },
     // liveReload: false,  // 取消自动刷新页面
     overlay: {
       warnings: false,
@@ -41,8 +45,8 @@ module.exports = {
     // 设置跨域
     proxy: {
       "/api": {
-        // target: "http://101.200.87.86:8088/",// 后端服务器地址
-        target: "https//api.csgone.cn",// 后端域名
+        target: "http://localhost:8088/",// 后端服务器地址
+        // target: "https//api.csgone.cn",// 后端域名
         // target: "https://oarfish-flowing-kodiak.ngrok-free.app",
         ws: true,
         changeOrigin: true,

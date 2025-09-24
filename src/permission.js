@@ -28,11 +28,15 @@ router.beforeEach(async (to, from, next) => {
       next({ path: "/" });
       NProgress.done();
     } else {
-      const hasRoles = store.getters.roles && store.getters.roles.length > 0;
+      const rolesGetter = store.getters.roles;
+      const hasRoles = Array.isArray(rolesGetter)
+        ? rolesGetter.length > 0
+        : Boolean(rolesGetter);
 
       if (hasRoles) {
         // Check if route has role restrictions and whether user has permission
-        if (to.meta.roles && !to.meta.roles.includes(store.getters.roles[0])) {
+        const userRoles = Array.isArray(rolesGetter) ? rolesGetter : [rolesGetter];
+        if (to.meta.roles && !to.meta.roles.some(r => userRoles.includes(r))) {
           Message.error("无访问权限"); // 显示无权限提示
           next({ path: "/" }); // 重定向至默认页面
           NProgress.done();
@@ -45,10 +49,8 @@ router.beforeEach(async (to, from, next) => {
           const { roles } = await store.dispatch("user/getInfo");
 
           // Generate accessible routes map based on roles
-          const accessRoutes = await store.dispatch(
-            "permission/generateRoutes",
-            roles
-          );
+          const rolesArr = Array.isArray(roles) ? roles : [roles];
+          const accessRoutes = await store.dispatch("permission/generateRoutes", rolesArr);
 
           // Dynamically add routes
           router.addRoutes(accessRoutes);

@@ -1,15 +1,18 @@
 import { login, signin,getInfo, logout} from "@/api/user";
-import { getAllUsers, getUserById, addUser, updateUser, deleteUser } from "@/api/user";
+import { getAllUsers, getUserById, addUser, updateUser, deleteUser, resetPassword } from "@/api/user";
 import {
   getToken,
   setToken,
   removeToken,
+  removeUsername,
+  removeRole,
+  removeUserId,
   setUsername,
   setRole,
   setUserId,
 } from "@/utils/auth";
 
-// import { resetRouter } from "@/router";
+import { resetRouter } from "@/router";
 
 const getDefaultState = () => {
   return {
@@ -105,24 +108,32 @@ const actions = {
   // 获取用户信息，还未实现
   getInfo({ commit, state }) {
     return new Promise((resolve, reject) => {
-      getInfo(state.token)
+      getInfo()
         .then((response) => {
           const { data } = response;
-  
+
           if (!data) {
-            reject("验证失败，请重新登录");
+            return reject("验证失败，请重新登录");
           }
-  
-          // 确保 roles 为数组
-          const { roles = [], name } = data;
-  
-          if (roles.length === 0) {
-            reject("getInfo: 角色信息必须为非空数组！");
+
+          // 兼容后端返回的角色字段：可能为 roles (数组) 或 role (字符串)
+          const rawRole = data.roles !== undefined ? data.roles : data.role;
+          const rolesArr = Array.isArray(rawRole)
+            ? rawRole
+            : rawRole
+            ? [rawRole]
+            : [];
+
+          if (rolesArr.length === 0) {
+            return reject("getInfo: 未获取到角色信息");
           }
-  
-          commit("SET_ROLES", roles);
-          commit("SET_NAME", name);
-          resolve(data);
+
+          // 名称字段兼容 name/username
+          const displayName = data.name || data.username || "";
+
+          commit("SET_ROLES", rolesArr);
+          commit("SET_NAME", displayName);
+          resolve({ ...data, roles: rolesArr, name: displayName });
         })
         .catch((error) => {
           reject(error);
@@ -136,13 +147,25 @@ logout({ commit, state }) {
   return new Promise((resolve, reject) => {
     logout(state.token)
       .then(() => {
-        removeToken(); // 先移除 token
+        // 统一清理所有与登录相关的信息
+        removeToken();
+        removeUsername();
+        removeRole();
+        removeUserId();
+        // 重置路由与状态
         resetRouter();
         commit("RESET_STATE");
         resolve();
       })
       .catch((error) => {
-        reject(error);
+        // 即便后端登出失败，也要在前端进行本地清理，避免权限残留
+        removeToken();
+        removeUsername();
+        removeRole();
+        removeUserId();
+        resetRouter();
+        commit("RESET_STATE");
+        resolve();
       });
   });
 },
@@ -151,7 +174,11 @@ logout({ commit, state }) {
   // remove token
   resetToken({ commit }) {
     return new Promise((resolve) => {
-      removeToken(); // must remove  token  first
+      // 清理本地登录痕迹
+      removeToken();
+      removeUsername();
+      removeRole();
+      removeUserId();
       commit("RESET_STATE");
       resolve();
     });
@@ -162,8 +189,9 @@ logout({ commit, state }) {
     return new Promise((resolve, reject) => {
       getAllUsers()
         .then(response => {
-          commit("SET_USERS", response.data);  // 假设后端返回的用户列表是 response.data
-          resolve(response.data);
+          const users = Array.isArray(response) ? response : response.data;
+          commit("SET_USERS", users);
+          resolve(users);
         })
         .catch(error => reject(error));
     });
@@ -174,8 +202,9 @@ logout({ commit, state }) {
     return new Promise((resolve, reject) => {
       getUserById(id)
         .then(response => {
-          commit("SET_USER", response.data);  // 假设返回的是一个用户对象 response.data
-          resolve(response.data);
+          const user = response && response.data !== undefined ? response.data : response;
+          commit("SET_USER", user);
+          resolve(user);
         })
         .catch(error => reject(error));
     });
@@ -212,6 +241,18 @@ logout({ commit, state }) {
         .then(response => {
           dispatch("fetchAllUsers");  // 刷新用户列表
           resolve(response.data);
+        })
+        .catch(error => reject(error));
+    });
+  },
+
+  // 重置密码
+  resetPassword({ dispatch }, { id, newPassword }) {
+    return new Promise((resolve, reject) => {
+      resetPassword(id, { newPassword })
+        .then(response => {
+          dispatch("fetchAllUsers");
+          resolve(response && response.data !== undefined ? response.data : response);
         })
         .catch(error => reject(error));
     });
