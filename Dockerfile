@@ -2,7 +2,8 @@
 FROM node:18 AS build-stage
 WORKDIR /app
 COPY . .
-RUN npm install && npm run build:prod
+# RUN npm install && npm run build:prod
+RUN npm install && npm run build:test
 
 # 用 nginx 作为生产环境服务器
 FROM nginx:alpine AS production-stage
